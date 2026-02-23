@@ -3,23 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Festival Mastery Game</title>
+    <title>Festival Quest: Spell & Solve</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600&display=swap');
         
         body {
             font-family: 'Quicksand', sans-serif;
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            background: linear-gradient(135deg, #fef2f2 0%, #f0f9ff 100%);
             min-height: 100vh;
         }
 
         .font-game { font-family: 'Fredoka One', cursive; }
 
-        .drop-zone.active {
-            border-color: #3b82f6;
-            background-color: #eff6ff;
-            transform: scale(1.02);
+        .letter-slot {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .shake {
@@ -34,99 +32,112 @@
         }
 
         .blank-input {
-            width: 2.5rem;
-            height: 3rem;
-            border-bottom: 3px solid #94a3b8;
+            width: 2rem;
+            height: 2.8rem;
+            border-bottom: 3px solid #cbd5e1;
             text-align: center;
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: bold;
             color: #1e40af;
-            background: transparent;
+            background: #f8fafc;
             outline: none;
+            border-radius: 4px 4px 0 0;
             transition: all 0.2s;
+            text-transform: uppercase;
         }
 
         .blank-input:focus {
             border-bottom-color: #3b82f6;
-            background: #f8fafc;
+            background: #eff6ff;
         }
 
         .blank-input.correct {
             border-bottom-color: #22c55e;
             color: #16a34a;
+            background: #f0fdf4;
         }
+        
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div id="game-container" class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-100">
+    <div id="game-container" class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-white">
         <!-- Header -->
-        <div class="bg-blue-500 p-6 text-white text-center">
-            <h1 class="text-3xl font-game mb-1">Festival Explorer</h1>
-            <p class="text-sm uppercase tracking-widest opacity-80">Spell • Match • Complete</p>
+        <div class="bg-indigo-600 p-6 text-white text-center">
+            <h1 class="text-3xl font-game mb-1 tracking-wider">Festival Quest</h1>
+            <div class="flex justify-center items-center gap-2 text-xs font-bold opacity-80 uppercase tracking-tighter">
+                <span>Spell Festival</span>
+                <span>→</span>
+                <span>Fill Activities</span>
+            </div>
         </div>
 
-        <!-- Progress -->
-        <div class="w-full bg-gray-100 h-3">
-            <div id="progress" class="bg-blue-400 h-3 transition-all duration-700" style="width: 0%"></div>
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-100 h-3">
+            <div id="progress" class="bg-emerald-400 h-3 transition-all duration-1000" style="width: 0%"></div>
         </div>
 
         <!-- Start Screen -->
         <div id="screen-start" class="p-12 text-center">
-            <div class="text-6xl mb-6">🏮 🐲 🥚 🎄 🎃</div>
-            <h2 class="text-2xl font-bold mb-8 text-slate-700 font-game">Master the traditions!</h2>
-            <button onclick="startGame()" class="bg-blue-600 hover:bg-blue-700 text-white font-game text-xl py-4 px-12 rounded-full shadow-lg transform transition active:scale-95">
-                START ADVENTURE
+            <div class="text-7xl mb-8 animate-bounce">🏮🐲🥚🎄🎃</div>
+            <h2 class="text-2xl font-bold mb-4 text-slate-800 font-game">Can you master all the festivals?</h2>
+            <p class="text-slate-500 mb-8 max-w-md mx-auto">Spell the names of the holidays and complete the words for their famous traditions!</p>
+            <button onclick="startGame()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-game text-xl py-4 px-12 rounded-full shadow-lg transform transition active:scale-95">
+                START PLAYING
             </button>
         </div>
 
         <!-- Game Screen -->
-        <div id="screen-game" class="hidden p-6">
+        <div id="screen-game" class="hidden p-4 md:p-8">
             
             <!-- PHASE 1: Spell Festival -->
-            <div id="phase-spell-festival" class="text-center">
-                <div class="mb-4"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">STEP 1: SPELL THE FESTIVAL</span></div>
-                <div id="festival-icon" class="text-5xl mb-4"></div>
-                <div id="fest-letter-slots" class="flex flex-wrap justify-center gap-2 mb-8"></div>
-                <div id="fest-keyboard" class="flex flex-wrap justify-center gap-2 max-w-md mx-auto"></div>
+            <div id="phase-spell-festival" class="text-center fade-in">
+                <div class="mb-6">
+                    <span class="bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Part 1: The Holiday</span>
+                </div>
+                <div id="festival-icon" class="text-7xl mb-6"></div>
+                <div id="fest-letter-slots" class="flex flex-wrap justify-center gap-2 mb-10"></div>
+                <div id="fest-keyboard" class="flex flex-wrap justify-center gap-2 max-w-lg mx-auto bg-slate-50 p-4 rounded-2xl border border-slate-100"></div>
             </div>
 
-            <!-- PHASE 2: Match & Fill Blanks -->
-            <div id="phase-activity-blanks" class="hidden">
-                <div class="text-center mb-6">
-                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Step 2: Complete the Tradition</span>
-                    <h2 id="match-title" class="text-xl font-bold mt-4 text-slate-700"></h2>
+            <!-- PHASE 2: Activity Blanks -->
+            <div id="phase-activity-blanks" class="hidden fade-in">
+                <div class="text-center mb-8">
+                    <span class="bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Part 2: Traditions</span>
+                    <h2 id="match-title" class="text-2xl font-bold mt-4 text-slate-700 font-game"></h2>
                 </div>
 
-                <div id="activity-container" class="space-y-6 max-w-2xl mx-auto">
-                    <!-- Activity spelling rows will appear here -->
+                <div id="activity-container" class="space-y-4 max-w-2xl mx-auto">
+                    <!-- Activity spelling rows -->
                 </div>
 
-                <div class="mt-8 text-center">
-                    <button id="btn-next-festival" onclick="finishActivityPhase()" class="hidden bg-green-500 hover:bg-green-600 text-white font-game py-3 px-10 rounded-full shadow-md transition">
-                        NEXT FESTIVAL →
+                <div class="mt-10 text-center">
+                    <button id="btn-next-festival" onclick="finishActivityPhase()" class="hidden bg-emerald-500 hover:bg-emerald-600 text-white font-game py-4 px-12 rounded-full shadow-xl transition transform hover:scale-105 active:scale-95">
+                        CONTINUE ADVENTURE →
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- End Screen -->
-        <div id="screen-end" class="hidden p-12 text-center">
-            <div class="text-7xl mb-4">🎖️</div>
-            <h2 class="text-3xl font-game text-blue-600 mb-2">Festival Expert!</h2>
-            <p class="text-slate-600 mb-8">You successfully spelled the names and activities of all festivals.</p>
-            <button onclick="location.reload()" class="bg-blue-500 text-white font-game py-3 px-8 rounded-full">PLAY AGAIN</button>
+        <div id="screen-end" class="hidden p-16 text-center fade-in">
+            <div class="text-8xl mb-6">👑</div>
+            <h2 class="text-4xl font-game text-indigo-600 mb-4">Festival Master!</h2>
+            <p class="text-slate-600 text-xl mb-10">You've mastered all the spellings and activities.</p>
+            <button onclick="location.reload()" class="bg-indigo-600 text-white font-game py-4 px-12 rounded-full shadow-lg">PLAY AGAIN</button>
         </div>
     </div>
 
-    <!-- UI Overlay Message -->
-    <div id="toast" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-white font-bold shadow-xl hidden transition-all"></div>
+    <!-- UI Feedback -->
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 px-8 py-4 rounded-2xl text-white font-bold shadow-2xl hidden z-50 transition-all text-lg"></div>
 
     <script>
         const festivalData = [
             { 
                 name: "MID AUTUMN FESTIVAL", 
                 icon: "🏮", 
-                activities: ["GAZE AT THE FULL MOON"] 
+                activities: ["GAZE AT THE FULL MOON", "SOLVE RIDDLES"] 
             },
             { 
                 name: "DRAGON BOAT FESTIVAL", 
@@ -136,7 +147,7 @@
             { 
                 name: "EASTER", 
                 icon: "🥚", 
-                activities: ["HUNT FOR EGGS"] 
+                activities: ["HUNT FOR CHOCOLATE EGGS"] 
             },
             { 
                 name: "CHRISTMAS", 
@@ -146,7 +157,7 @@
             { 
                 name: "HALLOWEEN", 
                 icon: "🎃", 
-                activities: ["GO TRICK OR TREATING"] 
+                activities: ["GO TRICK OR TREATING", "WEAR COSTUMES"] 
             }
         ];
 
@@ -159,7 +170,6 @@
             loadFestivalSpelling();
         }
 
-        // --- PHASE 1: SPELL FESTIVAL ---
         function loadFestivalSpelling() {
             const fest = festivalData[currentFestIdx];
             festSpellingIndex = 0;
@@ -176,24 +186,24 @@
                 if (char === ' ') {
                     slot.className = "w-6";
                 } else {
-                    slot.className = "w-10 h-12 border-b-4 border-blue-200 flex items-center justify-center text-2xl font-game text-blue-600 transition-all";
+                    slot.className = "letter-slot w-10 h-14 border-b-4 border-slate-200 flex items-center justify-center text-3xl font-game text-indigo-600";
                     slot.id = `fest-slot-${i}`;
                 }
                 slotContainer.appendChild(slot);
             });
 
-            generateFestKeyboard(fest.name);
+            generateKeyboard(fest.name);
             updateProgress();
         }
 
-        function generateFestKeyboard(name) {
+        function generateKeyboard(name) {
             const keyboard = document.getElementById('fest-keyboard');
             keyboard.innerHTML = '';
             const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
             const required = name.replace(/\s/g, '').split('');
             let pool = [...new Set(required)];
             
-            while(pool.length < 12) {
+            while(pool.length < 15) {
                 const rand = letters[Math.floor(Math.random() * 26)];
                 if(!pool.includes(rand)) pool.push(rand);
             }
@@ -201,7 +211,7 @@
 
             pool.forEach(l => {
                 const btn = document.createElement('button');
-                btn.className = "w-10 h-12 bg-white border-2 border-blue-100 rounded-lg font-game text-blue-500 hover:bg-blue-50 active:scale-90 transition";
+                btn.className = "w-11 h-14 bg-white border-2 border-slate-100 rounded-xl font-game text-indigo-500 hover:bg-indigo-50 hover:border-indigo-200 shadow-sm active:scale-90 transition";
                 btn.innerText = l;
                 btn.onclick = () => handleFestLetter(l, btn);
                 keyboard.appendChild(btn);
@@ -211,7 +221,6 @@
         function handleFestLetter(letter, btn) {
             const name = festivalData[currentFestIdx].name;
             
-            // Auto-skip spaces
             while(name[festSpellingIndex] === ' ') {
                 festSpellingIndex++;
             }
@@ -219,67 +228,73 @@
             if (letter === name[festSpellingIndex]) {
                 const slot = document.getElementById(`fest-slot-${festSpellingIndex}`);
                 slot.innerText = letter;
-                slot.classList.add('border-green-400', 'text-green-500');
+                slot.classList.replace('border-slate-200', 'border-emerald-400');
+                slot.classList.add('text-emerald-500');
                 festSpellingIndex++;
                 
                 if (festSpellingIndex >= name.length) {
-                    showToast("Perfect! ✨", "bg-green-500");
-                    setTimeout(loadActivityBlanks, 1000);
+                    showToast("Excellent! ✨", "bg-indigo-600");
+                    setTimeout(loadActivityBlanks, 800);
                 }
             } else {
-                btn.classList.add('shake', 'bg-red-50', 'border-red-200');
-                setTimeout(() => btn.classList.remove('shake', 'bg-red-50', 'border-red-200'), 500);
+                btn.classList.add('shake', 'bg-red-50', 'border-red-200', 'text-red-500');
+                setTimeout(() => btn.classList.remove('shake', 'bg-red-50', 'border-red-200', 'text-red-500'), 500);
             }
         }
 
-        // --- PHASE 2: ACTIVITY BLANKS ---
         function loadActivityBlanks() {
             document.getElementById('phase-spell-festival').classList.add('hidden');
             document.getElementById('phase-activity-blanks').classList.remove('hidden');
             document.getElementById('btn-next-festival').classList.add('hidden');
             
             const fest = festivalData[currentFestIdx];
-            document.getElementById('match-title').innerText = `What do we do during ${fest.name}?`;
+            document.getElementById('match-title').innerText = `Traditions of ${fest.name}`;
             
             const container = document.getElementById('activity-container');
             container.innerHTML = '';
 
-            fest.activities.forEach((activity, actIdx) => {
+            fest.activities.forEach((activity) => {
                 const row = document.createElement('div');
-                row.className = "bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-wrap gap-1 justify-center items-center";
+                row.className = "bg-white p-6 rounded-2xl border-2 border-slate-50 shadow-sm flex flex-wrap gap-2 justify-center items-center";
                 
-                // Decide which indices to hide (roughly 30-40% of letters)
                 const words = activity.split(' ');
-                let globalIdx = 0;
+                let charCount = 0;
 
-                words.forEach((word, wIdx) => {
+                words.forEach((word) => {
                     const wordWrap = document.createElement('div');
-                    wordWrap.className = "flex gap-1 mr-4 mb-2";
+                    wordWrap.className = "flex gap-1 mr-4";
 
                     word.split('').forEach((char, cIdx) => {
-                        // Logic: Hide roughly every 3rd letter but never the first or last of the whole activity
-                        const shouldHide = (cIdx + globalIdx) % 3 === 1 && char !== ' ';
+                        // Create a pattern for blanks (hiding roughly 40% of letters)
+                        const isBlank = (cIdx + charCount) % 3 === 1;
                         
-                        if (shouldHide) {
+                        if (isBlank) {
                             const input = document.createElement('input');
                             input.className = "blank-input";
                             input.maxLength = 1;
                             input.dataset.answer = char;
                             input.oninput = (e) => checkBlank(e.target);
+                            input.onclick = (e) => e.target.select();
                             wordWrap.appendChild(input);
                         } else {
                             const letter = document.createElement('div');
-                            letter.className = "w-8 h-12 flex items-center justify-center text-xl font-bold text-slate-400";
+                            letter.className = "w-8 h-12 flex items-center justify-center text-xl font-bold text-slate-400 border-b-3 border-transparent";
                             letter.innerText = char;
                             wordWrap.appendChild(letter);
                         }
                     });
                     row.appendChild(wordWrap);
-                    globalIdx += word.length + 1;
+                    charCount += word.length;
                 });
 
                 container.appendChild(row);
             });
+            
+            // Focus first blank
+            setTimeout(() => {
+                const firstInput = document.querySelector('.blank-input');
+                if (firstInput) firstInput.focus();
+            }, 500);
         }
 
         function checkBlank(input) {
@@ -288,18 +303,19 @@
                 input.classList.add('correct');
                 input.disabled = true;
                 
-                // Check if all blanks in this phase are done
                 const allInputs = document.querySelectorAll('.blank-input');
                 const allCorrect = Array.from(allInputs).every(i => i.classList.contains('correct'));
                 
                 if (allCorrect) {
                     document.getElementById('btn-next-festival').classList.remove('hidden');
-                    showToast("Activity Complete! 🌟", "bg-blue-500");
+                    showToast("Wonderful! 🌟", "bg-emerald-500");
+                } else {
+                    // Find next input
+                    const inputsArray = Array.from(allInputs);
+                    const currIdx = inputsArray.indexOf(input);
+                    const next = inputsArray.slice(currIdx + 1).find(i => !i.disabled);
+                    if (next) next.focus();
                 }
-
-                // Focus next input automatically
-                const next = Array.from(allInputs).find(i => !i.disabled);
-                if(next) next.focus();
             } else if (val !== "") {
                 input.value = "";
                 input.classList.add('shake');
@@ -320,18 +336,14 @@
 
         function updateProgress(force) {
             const bar = document.getElementById('progress');
-            if(force) {
-                bar.style.width = force + '%';
-                return;
-            }
-            const p = (currentFestIdx / festivalData.length) * 100;
+            const p = force || (currentFestIdx / festivalData.length) * 100;
             bar.style.width = p + '%';
         }
 
         function showToast(msg, color) {
             const t = document.getElementById('toast');
             t.innerText = msg;
-            t.className = `fixed top-10 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-white font-bold shadow-xl z-50 ${color}`;
+            t.className = `fixed bottom-10 left-1/2 transform -translate-x-1/2 px-10 py-4 rounded-full text-white font-bold shadow-2xl z-50 transition-all ${color}`;
             t.classList.remove('hidden');
             setTimeout(() => t.classList.add('hidden'), 2000);
         }
