@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Festival Mastery Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+        }
+
+        .font-game { font-family: 'Fredoka One', cursive; }
+
+        .drop-zone.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: scale(1.02);
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .blank-input {
+            width: 2.5rem;
+            height: 3rem;
+            border-bottom: 3px solid #94a3b8;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1e40af;
+            background: transparent;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .blank-input:focus {
+            border-bottom-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .blank-input.correct {
+            border-bottom-color: #22c55e;
+            color: #16a34a;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div id="game-container" class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-100">
+        <!-- Header -->
+        <div class="bg-blue-500 p-6 text-white text-center">
+            <h1 class="text-3xl font-game mb-1">Festival Explorer</h1>
+            <p class="text-sm uppercase tracking-widest opacity-80">Spell • Match • Complete</p>
+        </div>
+
+        <!-- Progress -->
+        <div class="w-full bg-gray-100 h-3">
+            <div id="progress" class="bg-blue-400 h-3 transition-all duration-700" style="width: 0%"></div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="screen-start" class="p-12 text-center">
+            <div class="text-6xl mb-6">🏮 🐲 🥚 🎄 🎃</div>
+            <h2 class="text-2xl font-bold mb-8 text-slate-700 font-game">Master the traditions!</h2>
+            <button onclick="startGame()" class="bg-blue-600 hover:bg-blue-700 text-white font-game text-xl py-4 px-12 rounded-full shadow-lg transform transition active:scale-95">
+                START ADVENTURE
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="screen-game" class="hidden p-6">
+            
+            <!-- PHASE 1: Spell Festival -->
+            <div id="phase-spell-festival" class="text-center">
+                <div class="mb-4"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">STEP 1: SPELL THE FESTIVAL</span></div>
+                <div id="festival-icon" class="text-5xl mb-4"></div>
+                <div id="fest-letter-slots" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+                <div id="fest-keyboard" class="flex flex-wrap justify-center gap-2 max-w-md mx-auto"></div>
+            </div>
+
+            <!-- PHASE 2: Match & Fill Blanks -->
+            <div id="phase-activity-blanks" class="hidden">
+                <div class="text-center mb-6">
+                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Step 2: Complete the Tradition</span>
+                    <h2 id="match-title" class="text-xl font-bold mt-4 text-slate-700"></h2>
+                </div>
+
+                <div id="activity-container" class="space-y-6 max-w-2xl mx-auto">
+                    <!-- Activity spelling rows will appear here -->
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button id="btn-next-festival" onclick="finishActivityPhase()" class="hidden bg-green-500 hover:bg-green-600 text-white font-game py-3 px-10 rounded-full shadow-md transition">
+                        NEXT FESTIVAL →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="screen-end" class="hidden p-12 text-center">
+            <div class="text-7xl mb-4">🎖️</div>
+            <h2 class="text-3xl font-game text-blue-600 mb-2">Festival Expert!</h2>
+            <p class="text-slate-600 mb-8">You successfully spelled the names and activities of all festivals.</p>
+            <button onclick="location.reload()" class="bg-blue-500 text-white font-game py-3 px-8 rounded-full">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- UI Overlay Message -->
+    <div id="toast" class="fixed top-10 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-white font-bold shadow-xl hidden transition-all"></div>
+
+    <script>
+        const festivalData = [
+            { 
+                name: "MID AUTUMN FESTIVAL", 
+                icon: "🏮", 
+                activities: ["GAZE AT THE FULL MOON"] 
+            },
+            { 
+                name: "DRAGON BOAT FESTIVAL", 
+                icon: "🐲", 
+                activities: ["WATCH DRAGON BOAT RACES", "EAT RICE DUMPLINGS"] 
+            },
+            { 
+                name: "EASTER", 
+                icon: "🥚", 
+                activities: ["HUNT FOR EGGS"] 
+            },
+            { 
+                name: "CHRISTMAS", 
+                icon: "🎄", 
+                activities: ["PUT ON THE CHRISTMAS TREE", "EXCHANGE CHRISTMAS GIFT"] 
+            },
+            { 
+                name: "HALLOWEEN", 
+                icon: "🎃", 
+                activities: ["GO TRICK OR TREATING"] 
+            }
+        ];
+
+        let currentFestIdx = 0;
+        let festSpellingIndex = 0;
+
+        function startGame() {
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            loadFestivalSpelling();
+        }
+
+        // --- PHASE 1: SPELL FESTIVAL ---
+        function loadFestivalSpelling() {
+            const fest = festivalData[currentFestIdx];
+            festSpellingIndex = 0;
+            
+            document.getElementById('phase-spell-festival').classList.remove('hidden');
+            document.getElementById('phase-activity-blanks').classList.add('hidden');
+            document.getElementById('festival-icon').innerText = fest.icon;
+            
+            const slotContainer = document.getElementById('fest-letter-slots');
+            slotContainer.innerHTML = '';
+            
+            fest.name.split('').forEach((char, i) => {
+                const slot = document.createElement('div');
+                if (char === ' ') {
+                    slot.className = "w-6";
+                } else {
+                    slot.className = "w-10 h-12 border-b-4 border-blue-200 flex items-center justify-center text-2xl font-game text-blue-600 transition-all";
+                    slot.id = `fest-slot-${i}`;
+                }
+                slotContainer.appendChild(slot);
+            });
+
+            generateFestKeyboard(fest.name);
+            updateProgress();
+        }
+
+        function generateFestKeyboard(name) {
+            const keyboard = document.getElementById('fest-keyboard');
+            keyboard.innerHTML = '';
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+            const required = name.replace(/\s/g, '').split('');
+            let pool = [...new Set(required)];
+            
+            while(pool.length < 12) {
+                const rand = letters[Math.floor(Math.random() * 26)];
+                if(!pool.includes(rand)) pool.push(rand);
+            }
+            pool.sort(() => Math.random() - 0.5);
+
+            pool.forEach(l => {
+                const btn = document.createElement('button');
+                btn.className = "w-10 h-12 bg-white border-2 border-blue-100 rounded-lg font-game text-blue-500 hover:bg-blue-50 active:scale-90 transition";
+                btn.innerText = l;
+                btn.onclick = () => handleFestLetter(l, btn);
+                keyboard.appendChild(btn);
+            });
+        }
+
+        function handleFestLetter(letter, btn) {
+            const name = festivalData[currentFestIdx].name;
+            
+            // Auto-skip spaces
+            while(name[festSpellingIndex] === ' ') {
+                festSpellingIndex++;
+            }
+
+            if (letter === name[festSpellingIndex]) {
+                const slot = document.getElementById(`fest-slot-${festSpellingIndex}`);
+                slot.innerText = letter;
+                slot.classList.add('border-green-400', 'text-green-500');
+                festSpellingIndex++;
+                
+                if (festSpellingIndex >= name.length) {
+                    showToast("Perfect! ✨", "bg-green-500");
+                    setTimeout(loadActivityBlanks, 1000);
+                }
+            } else {
+                btn.classList.add('shake', 'bg-red-50', 'border-red-200');
+                setTimeout(() => btn.classList.remove('shake', 'bg-red-50', 'border-red-200'), 500);
+            }
+        }
+
+        // --- PHASE 2: ACTIVITY BLANKS ---
+        function loadActivityBlanks() {
+            document.getElementById('phase-spell-festival').classList.add('hidden');
+            document.getElementById('phase-activity-blanks').classList.remove('hidden');
+            document.getElementById('btn-next-festival').classList.add('hidden');
+            
+            const fest = festivalData[currentFestIdx];
+            document.getElementById('match-title').innerText = `What do we do during ${fest.name}?`;
+            
+            const container = document.getElementById('activity-container');
+            container.innerHTML = '';
+
+            fest.activities.forEach((activity, actIdx) => {
+                const row = document.createElement('div');
+                row.className = "bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-wrap gap-1 justify-center items-center";
+                
+                // Decide which indices to hide (roughly 30-40% of letters)
+                const words = activity.split(' ');
+                let globalIdx = 0;
+
+                words.forEach((word, wIdx) => {
+                    const wordWrap = document.createElement('div');
+                    wordWrap.className = "flex gap-1 mr-4 mb-2";
+
+                    word.split('').forEach((char, cIdx) => {
+                        // Logic: Hide roughly every 3rd letter but never the first or last of the whole activity
+                        const shouldHide = (cIdx + globalIdx) % 3 === 1 && char !== ' ';
+                        
+                        if (shouldHide) {
+                            const input = document.createElement('input');
+                            input.className = "blank-input";
+                            input.maxLength = 1;
+                            input.dataset.answer = char;
+                            input.oninput = (e) => checkBlank(e.target);
+                            wordWrap.appendChild(input);
+                        } else {
+                            const letter = document.createElement('div');
+                            letter.className = "w-8 h-12 flex items-center justify-center text-xl font-bold text-slate-400";
+                            letter.innerText = char;
+                            wordWrap.appendChild(letter);
+                        }
+                    });
+                    row.appendChild(wordWrap);
+                    globalIdx += word.length + 1;
+                });
+
+                container.appendChild(row);
+            });
+        }
+
+        function checkBlank(input) {
+            const val = input.value.toUpperCase();
+            if (val === input.dataset.answer) {
+                input.classList.add('correct');
+                input.disabled = true;
+                
+                // Check if all blanks in this phase are done
+                const allInputs = document.querySelectorAll('.blank-input');
+                const allCorrect = Array.from(allInputs).every(i => i.classList.contains('correct'));
+                
+                if (allCorrect) {
+                    document.getElementById('btn-next-festival').classList.remove('hidden');
+                    showToast("Activity Complete! 🌟", "bg-blue-500");
+                }
+
+                // Focus next input automatically
+                const next = Array.from(allInputs).find(i => !i.disabled);
+                if(next) next.focus();
+            } else if (val !== "") {
+                input.value = "";
+                input.classList.add('shake');
+                setTimeout(() => input.classList.remove('shake'), 400);
+            }
+        }
+
+        function finishActivityPhase() {
+            currentFestIdx++;
+            if (currentFestIdx < festivalData.length) {
+                loadFestivalSpelling();
+            } else {
+                document.getElementById('screen-game').classList.add('hidden');
+                document.getElementById('screen-end').classList.remove('hidden');
+                updateProgress(100);
+            }
+        }
+
+        function updateProgress(force) {
+            const bar = document.getElementById('progress');
+            if(force) {
+                bar.style.width = force + '%';
+                return;
+            }
+            const p = (currentFestIdx / festivalData.length) * 100;
+            bar.style.width = p + '%';
+        }
+
+        function showToast(msg, color) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = `fixed top-10 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-white font-bold shadow-xl z-50 ${color}`;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 2000);
+        }
+    </script>
+</body>
+</html>
